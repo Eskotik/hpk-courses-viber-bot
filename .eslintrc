@@ -1,0 +1,20 @@
+{
+    "parserOptions": {
+      "ecmaVersion": 2022,
+      "sourceType": "module"
+    },
+  
+    "env": {
+      "es6": true,
+      "shared-node-browser": true
+    },
+    "extends": [
+      "eslint:recommended",
+      "prettier"
+    ],
+    "rules": {
+      "semi": ["warn", "never"],
+      "no-undef": "off"
+    }
+  }
+  
