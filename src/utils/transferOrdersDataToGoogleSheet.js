@@ -8,7 +8,7 @@ const transferOrdersDataToGoogleSheet = async () => {
     await connectToDatabase()
     const creds = require('../../hpfk-389609-2ad2fc504047.json')
 
-    const doc = new GoogleSpreadsheet(process.env.Sheet)
+    const doc = new GoogleSpreadsheet(process.env.Sheet_ID)
 
     await doc.useServiceAccountAuth(creds)
 
