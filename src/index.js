@@ -5,9 +5,9 @@ const { connectToDatabase } = require('./database/database')
 const { appOption, initialKeyboard } = require('./utils/Keyboards')
 const { transferOrdersDataToGoogleSheet } = require('./utils/transferOrdersDataToGoogleSheet')
 const bot = require('./bot/bot')
-BotEvents = require('viber-bot').Events
-TextMessage = require('viber-bot').Message.Text
-express = require('express')
+const BotEvents = require('viber-bot').Events
+const TextMessage = require('viber-bot').Message.Text
+const express = require('express')
 const app = express()
 require('dotenv').config()
 
@@ -61,7 +61,11 @@ start = async () => {
 
     bot.onTextMessage(/appType/i, (message, response) => {
       response.send(new TextMessage(`Виберіть варіант подачі заявки у меню нижче`, appOption))
-
+      const userId = response.userProfile.id
+      if (!userData[userId]) {
+        userData[userId] = {}
+      }
+      const currentUserData = userData[userId]
       bot.onTextMessage(/\/forms\/([^/]+)/, (message, response) => {
         response.send(new TextMessage(' ', initialKeyboard))
       })
@@ -75,31 +79,36 @@ start = async () => {
       })
 
       bot.onTextMessage(/.*/, async (message, response) => {
-        if (!userData.pib) {
-          userData.pib = message.text
+        if (!currentUserData.pib) {
+          currentUserData.pib = message.text
           response.send(new TextMessage('Введіть мобільний номер учня:'))
-        } else if (!userData.studentMobile) {
-          userData.studentMobile = message.text
+        } else if (!currentUserData.studentMobile) {
+          currentUserData.studentMobile = message.text
           response.send(new TextMessage('Введіть мобільний номер батьків:'))
-        } else if (!userData.parentMobile) {
-          userData.parentMobile = message.text
+        } else if (!currentUserData.parentMobile) {
+          currentUserData.parentMobile = message.text
           response.send(
             new TextMessage(
               'Введіть період навчання:(січень-лютий, березень-квітень, травень-червень...)'
             )
           )
         } else {
-          userData.period = message.text
+          currentUserData.period = message.text
           const Data = new Date(Date.now()).toLocaleString()
-          userData.Data = Data
+          currentUserData.Data = Data
           response.send(new TextMessage('Ваші дані записано', initialKeyboard))
 
-          if (userData.pib && userData.studentMobile && userData.parentMobile && userData.period) {
+          if (
+            currentUserData.pib &&
+            currentUserData.studentMobile &&
+            currentUserData.parentMobile &&
+            currentUserData.period
+          ) {
             const newOrder = new Orders({
-              Fullname: userData.pib,
-              studentMobile: userData.studentMobile,
-              parentMobile: userData.parentMobile,
-              period: userData.period,
+              Fullname: currentUserData.pib,
+              studentMobile: currentUserData.studentMobile,
+              parentMobile: currentUserData.parentMobile,
+              period: currentUserData.period,
               data_created: Data,
             })
 
@@ -111,10 +120,10 @@ start = async () => {
                   id: process.env.ADMIN_ID,
                 },
                 new TextMessage(
-                  `Ось дані, введені у заявці на курси\nПІБ: ${userData.pib}\nМобільний учня: ${userData.studentMobile}\nМобільний батьків: ${userData.parentMobile}\nПеріод навчання: ${userData.period}\nДата: ${userData.Data}`
+                  `Ось дані, введені у заявці на курси\nПІБ: ${currentUserData.pib}\nМобільний учня: ${currentUserData.studentMobile}\nМобільний батьків: ${currentUserData.parentMobile}\nПеріод навчання: ${currentUserData.period}\nДата: ${currentUserData.Data}`
                 )
               )
-              userData = {}
+              delete userData[userId]
             } catch (err) {
               console.error('Error saving data:', err)
             }
@@ -129,7 +138,7 @@ start = async () => {
     app.listen(port, () => {
       console.log(`Application running on port: ${port}`)
       bot.setWebhook(`${process.env.EXPOSE_URL}/viber/webhook`).catch((error) => {
-        console.log('Can not set webhook on following server. Is it running?')
+        console.log('Can not set webhook on the following server. Is it running?')
         console.error(error)
         process.exit(1)
       })
